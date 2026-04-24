@@ -1,0 +1,176 @@
+{% extends "_base.html" %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+{% endblock %}
+
+{% block body %}
+<div class="page-wrap">
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="status-dot status-{{ status_class }}"></div>
+      <span class="site-title">CO₂ Monitor</span>
+    </div>
+    <div class="topbar-right">
+      <details class="dropdown">
+        <summary class="btn-panel dropdown-trigger">
+          <span>{{ period_label }}</span>
+          <span class="caret">▾</span>
+        </summary>
+        <div class="dropdown-menu">
+          {% for p in periods %}
+          <a href="/?period={{ p.key }}" class="dropdown-item{% if p.key == period %} dropdown-item--active{% endif %}">{{ p.label }}</a>
+          {% endfor %}
+        </div>
+      </details>
+      <a href="/settings" class="btn-panel">⚙ Settings</a>
+    </div>
+  </div>
+
+  <div class="hero-stats">
+    <div class="hero">
+      <div class="eyebrow">current reading</div>
+      <div class="hero-number-row">
+        <span class="hero-number">{{ current }}</span>
+        <span class="hero-unit">%</span>
+      </div>
+      <div class="hero-meta">
+        <span class="status-chip status-chip--{{ status_class }}">{{ status_label }}</span>
+        <span class="updated-text">updated {{ updated_at }}</span>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-cell">
+        <div class="eyebrow">min · {{ period }}</div>
+        <div class="stat-value">{{ min }}<span class="stat-unit">%</span></div>
+      </div>
+      <div class="stat-cell">
+        <div class="eyebrow">max · {{ period }}</div>
+        <div class="stat-value {{ max_class }}">{{ max }}<span class="stat-unit">%</span></div>
+      </div>
+      <div class="stat-cell stat-cell--last">
+        <div class="eyebrow">avg · {{ period }}</div>
+        <div class="stat-value">{{ avg }}<span class="stat-unit">%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="graph-panel">
+    <canvas id="chart"></canvas>
+  </div>
+
+</div>
+
+<script type="application/json" id="bootstrap">{{ bootstrap_json | safe }}</script>
+<script>
+(function () {
+  const bootstrap = JSON.parse(document.getElementById('bootstrap').textContent);
+  const { readings, warn, danger, colors, period, windowMs } = bootstrap;
+
+  const canvas = document.getElementById('chart');
+  const ctx = canvas.getContext('2d');
+
+  function makeGrad() {
+    const g = ctx.createLinearGradient(0, 0, 0, canvas.offsetHeight || 320);
+    g.addColorStop(0, 'rgba(' + colors.accentRgb + ', 0.28)');
+    g.addColorStop(1, 'rgba(' + colors.accentRgb + ', 0)');
+    return g;
+  }
+
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      datasets: [{
+        label: 'CO₂ %',
+        data: readings.map(function(r) { return { x: r.time * 1000, y: r.co2 }; }),
+        borderColor: colors.accent,
+        backgroundColor: makeGrad(),
+        borderWidth: 2,
+        fill: true,
+        tension: 0.35,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: colors.accent,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      animations: { colors: false, x: false, y: false },
+      transitions: { active: { animation: { duration: 0 } } },
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: {
+          type: 'time',
+          min: Date.now() - windowMs,
+          max: Date.now(),
+          time: {
+            tooltipFormat: windowMs <= 86400000 ? 'HH:mm:ss' : 'MMM d, HH:mm',
+            displayFormats: { hour: 'HH:mm', minute: 'HH:mm', day: 'MMM d', week: 'MMM d', month: 'MMM yyyy' },
+          },
+          grid: { color: colors.line, drawTicks: false },
+          border: { display: false },
+          ticks: { color: colors.inkSoft, font: { family: 'ui-monospace, monospace', size: 10 }, maxRotation: 0 },
+        },
+        y: {
+          min: 0.03,
+          max: 0.16,
+          grid: { color: colors.line },
+          border: { display: false },
+          ticks: {
+            color: colors.inkSoft,
+            font: { family: 'ui-monospace, monospace', size: 10 },
+            callback: function(v) { return v.toFixed(2) + '%'; },
+            stepSize: 0.02,
+          },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: colors.panel,
+          titleColor: colors.ink,
+          bodyColor: colors.ink,
+          borderColor: colors.line,
+          borderWidth: 1,
+          padding: 10,
+          displayColors: false,
+          callbacks: { label: function(c) { return c.parsed.y.toFixed(3) + ' %'; } },
+        },
+        annotation: {
+          annotations: {
+            warnLine: {
+              type: 'line', yMin: warn, yMax: warn,
+              borderColor: colors.warn, borderWidth: 1, borderDash: [4, 4],
+              label: { display: true, content: 'warn', position: 'end', backgroundColor: 'transparent', color: colors.warn, font: { size: 10, family: 'ui-monospace, monospace' } },
+            },
+            dangerLine: {
+              type: 'line', yMin: danger, yMax: danger,
+              borderColor: colors.danger, borderWidth: 1, borderDash: [4, 4],
+              label: { display: true, content: 'danger', position: 'end', backgroundColor: 'transparent', color: colors.danger, font: { size: 10, family: 'ui-monospace, monospace' } },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  setInterval(function () {
+    fetch('/data?period=' + period)
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        const now = Date.now();
+        chart.data.datasets[0].data = data ? data.map(function(r) { return { x: r.time * 1000, y: r.co2 }; }) : [];
+        chart.options.scales.x.min = now - windowMs;
+        chart.options.scales.x.max = now;
+        chart.update('none');
+      });
+  }, 1500);
+}());
+</script>
+{% endblock %}

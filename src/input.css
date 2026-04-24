@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root,
+[data-theme="dark"] {
+  --bg:        #0d0f11;
+  --panel:     #14181c;
+  --panel2:    #1a1f24;
+  --ink:       #eef1f4;
+  --ink-soft:  #8a929b;
+  --ink-faint: #3a4148;
+  --line:      #262c32;
+  --accent:    #5fb8c4;
+  --warn:      #d4a24a;
+  --danger:    #d75a4a;
+  --ok:        #6fb88a;
+}
+
+[data-theme="light"] {
+  --bg:        #f6f5f1;
+  --panel:     #ffffff;
+  --panel2:    #faf8f3;
+  --ink:       #1a1d20;
+  --ink-soft:  #6b7178;
+  --ink-faint: #d0d2d4;
+  --line:      #e2e1dc;
+  --accent:    #3a8a98;
+  --warn:      #b07a2a;
+  --danger:    #b8412e;
+  --ok:        #4a8a64;
+}

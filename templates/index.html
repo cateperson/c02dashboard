@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CO2 DETECTOR</title>
+</head>
+<body>
+  <div>
+    <canvas id="myChart"></canvas>
+  </div>
+  
+  <button onclick="addReading()">Add Reading</button>
+  <button onclick="reset()">Reset graph</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    const ctx = document.getElementById('myChart');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'CO2',
+          data: [],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        scales: {
+          x: { ticks: { maxTicksLimit: 10 } }
+        }
+      }
+    });
+
+    async function fetchData() {
+      const resp = await fetch('/data');
+      const readings = await resp.json();
+      chart.data.labels = readings.map(r => new Date(r.time * 1000).toLocaleTimeString());
+      chart.data.datasets[0].data = readings.map(r => r.co2);
+      chart.update();
+    }
+
+    async function reset() {
+      await fetch('/data', { method: 'DELETE' });
+      fetchData();
+    }
+
+    async function addReading() {
+      await fetch('/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ co2: 350 + Math.random() * 300, time: Date.now() / 1000 })
+      });
+      fetchData();
+    }
+
+    fetchData();
+    setInterval(fetchData, 5000);
+  </script>
+</body>
+</html>

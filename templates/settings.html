@@ -1,0 +1,92 @@
+{% extends "_base.html" %}
+{% block title %}Settings — CO₂ Monitor{% endblock %}
+
+{% block body %}
+<div class="settings-page">
+
+  <div class="settings-topbar">
+    <a href="/" class="btn-panel btn-panel--back">← back</a>
+    <h1 class="settings-title">Settings</h1>
+  </div>
+
+  <form method="post" action="/settings" class="settings-form">
+
+    <section class="settings-section">
+      <div class="section-eyebrow">APPEARANCE</div>
+      <div class="settings-row">
+        <span class="row-label">Theme</span>
+        <div class="theme-toggle">
+          <input type="radio" id="theme-dark" name="theme" value="dark" class="sr-only" {% if theme == "dark" %}checked{% endif %}>
+          <label for="theme-dark" class="theme-btn">dark</label>
+          <input type="radio" id="theme-light" name="theme" value="light" class="sr-only" {% if theme == "light" %}checked{% endif %}>
+          <label for="theme-light" class="theme-btn">light</label>
+        </div>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <div class="section-eyebrow">THRESHOLDS</div>
+      <div class="settings-row">
+        <label for="warn-t" class="row-label">Warn above</label>
+        <div class="row-control">
+          <input type="number" id="warn-t" name="warn_threshold" step="0.001" value="{{ warn_threshold }}" class="num-input">
+          <span class="unit-suffix unit-suffix--warn">%</span>
+        </div>
+      </div>
+      <div class="settings-row">
+        <label for="danger-t" class="row-label">Danger above</label>
+        <div class="row-control">
+          <input type="number" id="danger-t" name="danger_threshold" step="0.001" value="{{ danger_threshold }}" class="num-input">
+          <span class="unit-suffix unit-suffix--danger">%</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <div class="section-eyebrow">NOTIFICATIONS · NTFY</div>
+      <div class="settings-row">
+        <label for="ntfy-server" class="row-label">Server</label>
+        <input type="text" id="ntfy-server" name="ntfy_server" value="{{ ntfy_server }}" class="text-input text-input--wide">
+      </div>
+      <div class="settings-row">
+        <label for="ntfy-topic" class="row-label">Topic</label>
+        <div class="topic-group">
+          <div class="topic-inputs">
+            <input type="text" id="ntfy-topic" name="ntfy_topic" value="{{ ntfy_topic }}" class="text-input text-input--topic">
+            <button type="submit" formaction="/settings/regen-topic" class="action-btn">↻ auto-generate</button>
+          </div>
+          <p class="topic-hint">Subscribe on your phone: {{ ntfy_server }}/{{ ntfy_topic }}</p>
+        </div>
+      </div>
+      <div class="settings-row">
+        <span class="row-label">Send when</span>
+        <div class="checks-group">
+          <label class="check-label">
+            <input type="checkbox" name="send_on_warn" value="1" class="sr-only check-peer" {% if send_on_warn %}checked{% endif %}>
+            <span class="check-box check-box--warn"></span>
+            <span>Reading goes above warn threshold</span>
+          </label>
+          <label class="check-label">
+            <input type="checkbox" name="send_on_danger" value="1" class="sr-only check-peer" {% if send_on_danger %}checked{% endif %}>
+            <span class="check-box check-box--danger"></span>
+            <span>Reading goes above danger threshold</span>
+          </label>
+        </div>
+      </div>
+      <div class="settings-row">
+        <span class="row-label"></span>
+        <button type="submit" formaction="/settings/test" class="cta-btn">Send test notification →</button>
+      </div>
+      <div class="settings-row">
+        <span class="row-label"></span>
+        <p class="offline-hint">Offline detection: auto-alerts if no reading for 5 minutes.</p>
+      </div>
+    </section>
+
+    <div class="settings-save-row">
+      <button type="submit" class="save-btn">Save settings</button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
